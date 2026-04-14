@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ============================================================================
+    OWN KAFKA - pom.xml (Maven Build File)
+    ============================================================================
+
+    WHAT: This is the Maven Project Object Model file. It tells Maven:
+          - What Java version to use
+          - What libraries (dependencies) our project needs
+          - How to compile, test, and run our code
+
+    WHY MAVEN? In real Kafka development (and most Java projects at companies),
+    Maven or Gradle manages dependencies and builds. Kafka itself uses Gradle,
+    but Maven is more common in enterprise Java — you'll see it everywhere.
+
+    INTERVIEW TIP: "What build tools have you used?" → Maven and Gradle are the
+    standard answers. Know the difference: Maven uses XML (pom.xml), Gradle uses
+    Groovy/Kotlin DSL (build.gradle). Maven is convention-over-configuration,
+    Gradle is more flexible.
+    ============================================================================
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        GROUP ID: Like a Java package name — identifies your organization.
+        ARTIFACT ID: The name of this specific project.
+        VERSION: Follows Semantic Versioning (major.minor.patch).
+        0.1.0 = Phase 1 of our Kafka clone.
+    -->
+    <groupId>com.ownkafka</groupId>
+    <artifactId>own-kafka</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Own Kafka</name>
+    <description>A Kafka clone built from scratch for learning distributed event streaming</description>
+
+    <properties>
+        <!-- Java 23 since that's what's installed on this machine -->
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Dependency versions — always pin versions for reproducible builds -->
+        <logback.version>1.4.14</logback.version>
+        <junit.version>5.10.2</junit.version>
+    </properties>
+
+    <dependencies>
+        <!--
+            LOGBACK: Logging framework. Includes SLF4J (the logging API).
+            WHY: In production Kafka, logs are critical for debugging.
+            Real Kafka uses log4j, but Logback is the modern successor.
+
+            SLF4J is the "interface", Logback is the "implementation" —
+            this is the Strategy Pattern in action.
+
+            INTERVIEW TIP: "What logging framework do you use?" → SLF4J + Logback
+            is the standard answer. Know why: SLF4J lets you swap implementations
+            without changing code (like how Kafka can swap storage engines).
+        -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <!--
+            JUNIT 5: Testing framework.
+            "test" scope = only available during testing, not in production JAR.
+
+            INTERVIEW TIP: Always mention that you write tests. Companies love
+            hearing "I TDD'd the protocol codec to ensure encode/decode roundtrips."
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Maven Compiler Plugin: Tells Maven to use Java 23.
+                Without this, Maven defaults to Java 5 (yes, really).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <source>23</source>
+                    <target>23</target>
+                </configuration>
+            </plugin>
+
+            <!--
+                Maven Surefire Plugin: Runs JUnit tests during 'mvn test'.
+                Version 3.2.5 is needed for JUnit 5 support.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+
+            <!--
+                Exec Maven Plugin: Lets us run our server with:
+                ./mvnw exec:java -Dexec.mainClass=com.ownkafka.OwnKafkaServer
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.ownkafka.OwnKafkaServer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

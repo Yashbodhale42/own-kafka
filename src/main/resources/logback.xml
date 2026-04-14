@@ -1,0 +1,26 @@
+<!--
+    LOGBACK CONFIGURATION
+    ====================
+    This controls how log messages appear in the console.
+
+    In real Kafka, logging is essential — operators watch logs to detect
+    under-replicated partitions, leader elections, and consumer lag.
+
+    The pattern below shows: timestamp, log level, thread name, logger (class), and message.
+    Example output: 2024-01-15 10:30:45 [INFO ] [main] c.o.s.BrokerServer - Listening on port 9092
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%-5level] [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Our own code logs at DEBUG level so we can see everything during development -->
+    <logger name="com.ownkafka" level="DEBUG"/>
+
+    <!-- Root logger at INFO level (suppresses noisy library logs) -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

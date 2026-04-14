@@ -1,0 +1,24 @@
+# Compiled class files
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+
+# Maven wrapper JAR (downloaded automatically)
+.mvn/wrapper/maven-wrapper.jar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Data directory (our Kafka messages will go here in later phases)
+data/
