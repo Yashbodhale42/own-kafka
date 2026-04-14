@@ -13,6 +13,9 @@ target/
 # Maven wrapper JAR (downloaded automatically)
 .mvn/wrapper/maven-wrapper.jar
 
+# Claude Code
+.claude/
+
 # OS files
 .DS_Store
 Thumbs.db
