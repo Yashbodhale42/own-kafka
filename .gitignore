@@ -23,5 +23,8 @@ Thumbs.db
 # Log files
 *.log
 
+CLAUDE.md
+LEARNING.md
+
 # Data directory (our Kafka messages will go here in later phases)
 data/
