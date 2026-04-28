@@ -6,7 +6,7 @@ import com.ownkafka.protocol.ErrorCode;
 import com.ownkafka.protocol.ProtocolCodec;
 import com.ownkafka.protocol.Request;
 import com.ownkafka.protocol.Response;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class RequestHandler {
     private final ProduceHandler produceHandler;
     private final FetchHandler fetchHandler;
 
-    public RequestHandler(InMemoryLog log) {
+    public RequestHandler(LogManager log) {
         this.produceHandler = new ProduceHandler(log);
         this.fetchHandler = new FetchHandler(log);
     }

@@ -3,13 +3,19 @@ package com.ownkafka;
 import com.ownkafka.client.OwnKafkaClient;
 import com.ownkafka.server.BrokerServer;
 import com.ownkafka.server.RequestHandler;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogConfig;
+import com.ownkafka.storage.LogManager;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
  * Quick integration test — starts the broker in a thread, connects a client,
  * produces and fetches messages. Run manually to verify end-to-end behavior.
+ *
+ * Phase 2: now uses disk-backed LogManager in a temp dir.
  *
  * Usage: java -cp target/classes;target/test-classes com.ownkafka.IntegrationTest
  */
@@ -18,9 +24,12 @@ public class IntegrationTest {
     public static void main(String[] args) throws Exception {
         System.out.println("=== OwnKafka Integration Test ===\n");
 
-        // Start broker on a test port
+        // Start broker on a test port with a temp data dir
         int port = 19092;
-        InMemoryLog log = new InMemoryLog();
+        Path tempDir = Files.createTempDirectory("ownkafka-integration-test-");
+        System.out.println("Temp data dir: " + tempDir);
+
+        LogManager log = new LogManager(LogConfig.forTesting(tempDir));
         RequestHandler handler = new RequestHandler(log);
         BrokerServer server = new BrokerServer(port, handler);
 
@@ -85,5 +94,6 @@ public class IntegrationTest {
         }
 
         server.shutdown();
+        log.close();
     }
 }

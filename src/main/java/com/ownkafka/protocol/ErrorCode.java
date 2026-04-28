@@ -33,6 +33,20 @@ public enum ErrorCode {
     NONE(0),
 
     /**
+     * Disk I/O failure on the broker (write or read failed).
+     * Real Kafka equivalent: KAFKA_STORAGE_ERROR(56).
+     *
+     * In production, this could mean:
+     * - Disk full
+     * - File system corruption
+     * - Permissions issue
+     * - Hardware failure
+     *
+     * Producers should retry; persistent storage errors usually require operator intervention.
+     */
+    STORAGE_ERROR(7),
+
+    /**
      * The topic doesn't exist on this broker.
      * Real Kafka code: UNKNOWN_TOPIC_OR_PARTITION(3)
      *

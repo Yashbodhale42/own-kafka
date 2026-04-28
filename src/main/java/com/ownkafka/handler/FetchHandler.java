@@ -1,10 +1,11 @@
 package com.ownkafka.handler;
 
 import com.ownkafka.protocol.*;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -70,9 +71,9 @@ public class FetchHandler {
     /** Maximum number of messages to return in a single FETCH response */
     private static final int MAX_FETCH_MESSAGES = 100;
 
-    private final InMemoryLog log;
+    private final LogManager log;
 
-    public FetchHandler(InMemoryLog log) {
+    public FetchHandler(LogManager log) {
         this.log = log;
     }
 
@@ -109,6 +110,10 @@ public class FetchHandler {
             ByteBuffer responsePayload = ProtocolCodec.encodeFetchResponsePayload(messages, offset);
             return new Response(correlationId, ErrorCode.NONE, responsePayload);
 
+        } catch (IOException e) {
+            // Disk I/O failed during read
+            logger.error("Storage I/O error during fetch", e);
+            return Response.error(correlationId, ErrorCode.STORAGE_ERROR);
         } catch (Exception e) {
             logger.error("Error handling fetch request", e);
             return Response.error(correlationId, ErrorCode.UNKNOWN_ERROR);

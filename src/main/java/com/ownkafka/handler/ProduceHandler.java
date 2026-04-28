@@ -1,10 +1,11 @@
 package com.ownkafka.handler;
 
 import com.ownkafka.protocol.*;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -50,14 +51,24 @@ public class ProduceHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ProduceHandler.class);
 
-    private final InMemoryLog log;
+    private final LogManager log;
 
-    public ProduceHandler(InMemoryLog log) {
+    public ProduceHandler(LogManager log) {
         this.log = log;
     }
 
     /**
      * Handles a PRODUCE request.
+     *
+     * PHASE 2 NOTE: We now persist to disk via LogManager. The append goes
+     * through CommitLog → Segment → FileChannel. After this method returns,
+     * the bytes are in the OS page cache; they'll hit physical disk either
+     * on the next periodic flush or on a clean shutdown.
+     *
+     * If the broker crashes before flush, the OS will still write whatever
+     * was in the page cache during a graceful kernel shutdown. Only kill -9
+     * + power loss simultaneously can lose recent writes — and even then,
+     * recovery handles torn final records gracefully.
      *
      * @param request the parsed request (header + payload)
      * @return response with the assigned offset or an error
@@ -75,24 +86,20 @@ public class ProduceHandler {
             // Format: [messageLength:4][messageBytes:N]
             byte[] messageBytes = ProtocolCodec.readBytes(payload);
 
-            // Step 3: Auto-create topic if it doesn't exist
-            // In real Kafka, this is controlled by auto.create.topics.enable (default: true)
-            // In production, it's usually set to false to prevent accidental topic creation.
-            if (!log.topicExists(topicName)) {
-                log.createTopic(topicName);
-                logger.info("Auto-created topic: {}", topicName);
-            }
-
-            // Step 4: Append the message to the log
+            // Step 3: Append (LogManager auto-creates the topic on first append)
             long offset = log.append(topicName, messageBytes);
 
             logger.debug("Produced message to topic='{}', offset={}, size={} bytes",
                     topicName, offset, messageBytes.length);
 
-            // Step 5: Build success response with the assigned offset
+            // Step 4: Build success response with the assigned offset
             ByteBuffer responsePayload = ProtocolCodec.encodeProduceResponsePayload(offset);
             return new Response(correlationId, ErrorCode.NONE, responsePayload);
 
+        } catch (IOException e) {
+            // Disk I/O failed — disk full, permissions, hardware error, etc.
+            logger.error("Storage I/O error during produce", e);
+            return Response.error(correlationId, ErrorCode.STORAGE_ERROR);
         } catch (Exception e) {
             logger.error("Error handling produce request", e);
             return Response.error(correlationId, ErrorCode.UNKNOWN_ERROR);

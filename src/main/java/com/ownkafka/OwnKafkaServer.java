@@ -2,9 +2,12 @@ package com.ownkafka;
 
 import com.ownkafka.server.BrokerServer;
 import com.ownkafka.server.RequestHandler;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogConfig;
+import com.ownkafka.storage.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * ============================================================================
@@ -84,8 +87,17 @@ public class OwnKafkaServer {
         // for maximum control.
         // ================================================================
 
-        // 1. Storage layer — where messages are stored
-        InMemoryLog log = new InMemoryLog();
+        // 1. Storage layer — disk-backed commit log (PHASE 2)
+        //    Recovers existing topics from disk if any exist.
+        LogConfig storageConfig = LogConfig.defaults();
+        LogManager log;
+        try {
+            log = new LogManager(storageConfig);
+        } catch (IOException e) {
+            logger.error("Failed to initialize storage layer", e);
+            System.exit(1);
+            return;
+        }
 
         // 2. Request handler — business logic (produce, fetch)
         RequestHandler requestHandler = new RequestHandler(log);
@@ -96,29 +108,36 @@ public class OwnKafkaServer {
         // ================================================================
         // SHUTDOWN HOOK — Graceful shutdown on Ctrl+C
         //
-        // The JVM calls shutdown hooks when the process is terminating.
-        // We use this to cleanly stop the server (close connections,
-        // flush buffers, etc.)
+        // ORDER MATTERS:
+        //   1. Stop the server (no more new requests get processed)
+        //   2. Close LogManager (flush all data, close all segments)
         //
-        // Runtime.getRuntime().addShutdownHook() registers a thread
-        // that runs during JVM shutdown. It's a best practice for any
-        // server application.
+        // If we did it the other way, in-flight produces would hit
+        // closed segments and lose data.
+        //
+        // Real Kafka uses a similar "controlled shutdown" sequence,
+        // but with extra steps: transfer partition leadership to other
+        // brokers, deregister from ZK/KRaft, etc.
         // ================================================================
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Shutdown hook triggered — stopping broker...");
             server.shutdown();
+            try {
+                log.close();
+            } catch (IOException e) {
+                logger.warn("Error closing storage during shutdown: {}", e.getMessage());
+            }
         }, "shutdown-hook"));
 
         // ================================================================
         // START THE SERVER
-        //
-        // This call BLOCKS — it runs the NIO event loop.
-        // The server will keep running until shutdown() is called.
+        // This call BLOCKS — it runs the accept loop.
         // ================================================================
         try {
             logger.info("============================================");
-            logger.info("     OWN KAFKA BROKER — Phase 1");
+            logger.info("     OWN KAFKA BROKER — Phase 2 (disk-backed)");
             logger.info("============================================");
+            logger.info("Data dir : {}", storageConfig.dataDir().toAbsolutePath());
             logger.info("Starting broker on port {}...", port);
             server.start();
         } catch (Exception e) {

@@ -1,36 +1,48 @@
 package com.ownkafka.server;
 
 import com.ownkafka.protocol.*;
-import com.ownkafka.storage.InMemoryLog;
+import com.ownkafka.storage.LogConfig;
+import com.ownkafka.storage.LogManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for RequestHandler — verifying produce and fetch logic end-to-end.
  *
- * These tests bypass the TCP layer and directly test the request handling
- * logic. This is a form of "integration testing" for our business logic
- * without needing network setup.
+ * Phase 2: Now backed by disk-based LogManager.
+ * Each test gets a temp directory via @TempDir.
  */
 class RequestHandlerTest {
 
+    @TempDir
+    Path tempDir;
+
     private RequestHandler handler;
-    private InMemoryLog log;
+    private LogManager log;
 
     @BeforeEach
-    void setUp() {
-        log = new InMemoryLog();
+    void setUp() throws IOException {
+        log = new LogManager(LogConfig.forTesting(tempDir));
         handler = new RequestHandler(log);
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        log.close();
     }
 
     @Test
     @DisplayName("Produce request stores message and returns offset")
-    void testProduceStoresMessage() {
+    void testProduceStoresMessage() throws IOException {
         // Build a produce request directly (as if received from the network)
         Request request = createProduceRequest(1, "test-topic", "Hello World");
 
