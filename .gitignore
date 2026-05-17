@@ -25,6 +25,7 @@ Thumbs.db
 
 CLAUDE.md
 LEARNING.md
+REVISION.md
 
 # Data directory (our Kafka messages will go here in later phases)
 data/
