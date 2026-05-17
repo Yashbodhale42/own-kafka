@@ -110,15 +110,19 @@
             </plugin>
 
             <!--
-                Exec Maven Plugin: Lets us run our server with:
+                Exec Maven Plugin: Lets us run our server/client with:
                 ./mvnw exec:java -Dexec.mainClass=com.ownkafka.OwnKafkaServer
+                ./mvnw exec:java -Dexec.mainClass=com.ownkafka.client.ClientCLI
+
+                Using ${exec.mainClass} so the CLI flag (-Dexec.mainClass=...) is
+                respected. If you don't pass the flag, defaults to the broker.
             -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>com.ownkafka.OwnKafkaServer</mainClass>
+                    <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
             </plugin>
         </plugins>
